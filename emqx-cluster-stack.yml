@@ -1,0 +1,98 @@
+services:
+    emqx1:
+        image: emqx/emqx:latest
+        environment:
+            - "EMQX_NAME=emqx"
+            - "EMQX_HOST=node1.emqx.io"
+            - "EMQX_CLUSTER__DISCOVERY_STRATEGY=static"
+            - "EMQX_CLUSTER__STATIC__SEEDS=[emqx@node1.emqx.io, emqx@node2.emqx.io,emqx@node3.emqx.io]"
+        networks:
+            emqx:
+                aliases:
+                    - node1.emqx.io
+        #volumes:
+        #    - /mnt/cephfs/emqx1/data:/opt/emqx/data
+        #    - /mnt/cephfs/emqx1/log:/opt/emqx/log
+        ports:
+            - 8083:8083
+            - 8084:8084
+            - 18083:18083
+        deploy:
+            restart_policy:
+                condition: on-failure
+            update_config:
+                parallelism: 1
+                delay: 10s
+                failure_action: rollback
+            rollback_config:
+                parallelism: 1
+                delay: 10s
+        healthcheck:
+            test: ["/opt/emqx/bin/emqx", "ctl", "status", "||", "exit", "1"]
+            interval: 10s
+            timeout: 25s
+            retries: 5
+            start_period: 10s
+    emqx2:
+        image: emqx/emqx:latest
+        environment:
+            - "EMQX_NAME=emqx"
+            - "EMQX_HOST=node2.emqx.io"
+            - "EMQX_CLUSTER__DISCOVERY_STRATEGY=static"
+            - "EMQX_CLUSTER__STATIC__SEEDS=[emqx@node1.emqx.io, emqx@node2.emqx.io,emqx@node3.emqx.io]"
+        networks:
+            emqx:
+                aliases:
+                    - node2.emqx.io
+        #volumes:
+        #    - /mnt/cephfs/emqx2/data:/opt/emqx/data
+        #    - /mnt/cephfs/emqx2/log:/opt/emqx/log
+        deploy:
+            restart_policy:
+                condition: on-failure
+            update_config:
+                parallelism: 1
+                delay: 10s
+                failure_action: rollback
+            rollback_config:
+                parallelism: 1
+                delay: 10s
+        healthcheck:
+            test: ["/opt/emqx/bin/emqx", "ctl", "status", "||", "exit", "1"]
+            interval: 10s
+            timeout: 25s
+            retries: 5
+            start_period: 10s
+    emqx3:
+        image: emqx/emqx:latest
+        environment:
+            - "EMQX_NAME=emqx"
+            - "EMQX_HOST=node3.emqx.io"
+            - "EMQX_CLUSTER__DISCOVERY_STRATEGY=static"
+            - "EMQX_CLUSTER__STATIC__SEEDS=[emqx@node1.emqx.io, emqx@node2.emqx.io,emqx@node3.emqx.io]"
+        networks:
+            emqx:
+                aliases:
+                    - node3.emqx.io
+        #volumes:
+        #    - /mnt/cephfs/emqx3/data:/opt/emqx/data
+        #    - /mnt/cephfs/emqx3/log:/opt/emqx/log
+        deploy:
+            restart_policy:
+                condition: on-failure
+            update_config:
+                parallelism: 1
+                delay: 10s
+                failure_action: rollback
+            rollback_config:
+                parallelism: 1
+                delay: 10s
+        healthcheck:
+            test: ["/opt/emqx/bin/emqx", "ctl", "status", "||", "exit", "1"]
+            interval: 10s
+            timeout: 25s
+            retries: 5
+            start_period: 10s
+networks:
+    emqx: #driver should be overlay and is attachable
+        external: true
