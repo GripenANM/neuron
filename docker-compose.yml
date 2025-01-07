@@ -32,6 +32,20 @@ services:
             - 8084:8084
             - 8883:8883
             - 18083:18083
+        deploy:
+            restart_policy:
+                condition: on-failure
+            update_config:
+                parallelism: 1
+                delay: 10s
+            rollback_config:
+                parallelism: 1
+                delay: 10s
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:18083/status"]
+            interval: 10s
+            timeout: 25s
+            retries: 5
     emqx2:
         image: emqx/emqx:latest
         environment:
@@ -46,7 +60,54 @@ services:
         volumes:
             - emqx-data-2:/opt/emqx/data
             - ./logs/emqx2:/opt/emqx/log
-
+    telegraf:
+        image: docker.io/telegraf:latest
+        container_name: telegraf
+        depends_on:
+            - influxdb2
+            - emqx1
+            - emqx2
+        command:
+            [
+                "telegraf",
+                "--config",
+                "http://influxdb2:8086/api/v2/telegrafs/0e316340c6b74000",
+            ]
+        environment:
+            - INFLUX_TOKEN=U7LV0D6y78vH4qge8v68fTqmR7Oj4Agxpf2bc09oe-xWzSOcMzeWS2T-zM9GkpUYQ9L_hOSRjnaQ-M54-JQF-w==
+        restart: unless-stopped
+        networks:
+            emqx-bridge:
+    influxdb2:
+        image: influxdb:2
+        ports:
+            - 8086:8086
+        environment:
+            DOCKER_INFLUXDB_INIT_MODE: setup
+            DOCKER_INFLUXDB_INIT_USERNAME_FILE: /run/secrets/influxdb2-admin-username
+            DOCKER_INFLUXDB_INIT_PASSWORD_FILE: /run/secrets/influxdb2-admin-password
+            DOCKER_INFLUXDB_INIT_ADMIN_TOKEN_FILE: /run/secrets/influxdb2-admin-token
+            DOCKER_INFLUXDB_INIT_ORG: newton
+            DOCKER_INFLUXDB_INIT_BUCKET: home
+        secrets:
+            - influxdb2-admin-username
+            - influxdb2-admin-password
+            - influxdb2-admin-token
+        volumes:
+            - influxdb2-data:/var/lib/influxdb2
+            - influxdb2-config:/etc/influxdb2
+        networks:
+            emqx-bridge:
+secrets:
+    influxdb2-admin-username:
+        file: ./.env.influxdb2-admin-username
+    influxdb2-admin-password:
+        file: ./.env.influxdb2-admin-password
+    influxdb2-admin-token:
+        file: ./.env.influxdb2-admin-token
+configs:
+    telegraf_conf:
+        file: ./telegraf/telegraf.conf
 networks:
     emqx-bridge:
         driver: bridge
@@ -54,3 +115,5 @@ volumes:
     neuron-data:
     emqx-data-1:
     emqx-data-2:
+    influxdb2-data:
+    influxdb2-config:

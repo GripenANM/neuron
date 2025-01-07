@@ -1,0 +1,63 @@
+services:
+    traefik:
+        image: "traefik:latest"
+        container_name: "traefik"
+        command:
+            - "--log.level=info"
+            - "--log.filepath=/etc/traefik/traefik.log"
+            - "--api.insecure=true"
+            - "--providers.docker=true"
+            - "--providers.docker.swarmMode=true"
+            - "--providers.docker.exposedbydefault=false"
+            - "--entryPoints.ping.address=:8082"
+            - "--ping.entryPoint=ping"
+            - "--entrypoints.web.address=:80"
+            - "--entrypoints.websecure.address=:443"
+            - "--entryPoints.mqtt.address=:1883"
+            - "--entryPoints.mqttsecure.address=:8883"
+        ports:
+            - 80:80
+            - 443:443
+            - 8080:8080
+            - 1883:1883
+            - 8883:8883
+        deploy:
+            mode: replicated
+            replicas: 3
+            placement:
+                constraints:
+                    - node.role == manager
+            restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+            update_config:
+                parallelism: 1
+                delay: 10s
+                failure_action: rollback
+            rollback_config:
+                parallelism: 1
+                delay: 10s
+                failure_action: rollback
+        healthcheck:
+            test:
+                [
+                    "wget",
+                    "--quiet",
+                    "--tries=1",
+                    "--spider",
+                    "http://127.0.0.1:8082/ping",
+                    "||",
+                    "exit 1",
+                ]
+            interval: 10s
+            timeout: 1s
+            retries: 5
+        networks:
+            - external-proxy
+        volumes:
+            - "/var/run/docker.sock:/var/run/docker.sock:ro"
+            - "/mnt/cephfs/traefik.log:/etc/traefik/traefik.log"
+networks:
+    external-proxy:
+        external: true
