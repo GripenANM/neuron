@@ -11,10 +11,11 @@ services:
             - EMQX_NODE__COOKIE
         hostname: node1.emqx.io
         networks:
-            - emqx
+            emqx:
+                aliases:
+                    - node1.emqx.io
         volumes:
-            - /mnt/cephfs/emqx1/data:/opt/emqx/data]
-            - /mnt/cephfs/emqx3/etc:/opt/emqx/etc
+            - /mnt/cephfs/emqx1/data:/opt/emqx/data
             - /mnt/cephfs/emqx1/log:/opt/emqx/log
         ports:
             - 8083:8083
@@ -57,10 +58,11 @@ services:
             - EMQX_NODE__COOKIE
         hostname: node2.emqx.io
         networks:
-            - emqx
+            emqx:
+                aliases:
+                    - node2.emqx.io
         volumes:
             - /mnt/cephfs/emqx2/data:/opt/emqx/data
-            - /mnt/cephfs/emqx3/etc:/opt/emqx/etc
             - /mnt/cephfs/emqx2/log:/opt/emqx/log
         deploy:
             restart_policy:
@@ -99,10 +101,11 @@ services:
             - EMQX_NODE__COOKIE
         hostname: node3.emqx.io
         networks:
-            - emqx
+            emqx:
+                aliases:
+                    - node3.emqx.io
         volumes:
             - /mnt/cephfs/emqx3/data:/opt/emqx/data
-            - /mnt/cephfs/emqx3/etc:/opt/emqx/etc
             - /mnt/cephfs/emqx3/log:/opt/emqx/log
         deploy:
             restart_policy:
@@ -131,7 +134,7 @@ services:
             retries: 5
 secrets:
     EMQX_NODE__COOKIE:
-        environment: EMQX_NODE__COOKIE
+        external: true
 networks:
     emqx: #driver should be overlay and is attachable
         external: true
